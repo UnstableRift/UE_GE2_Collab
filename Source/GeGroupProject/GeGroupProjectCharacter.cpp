@@ -26,6 +26,13 @@ AGeGroupProjectCharacter::AGeGroupProjectCharacter()
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
+
+	// Value stuff
+	IsDead = false;
+	respawnTime = 3.0f;
+	RespawnLocation = FVector(900.0f, 1110.0f, 92.0f);
+	PlayerHealth = 1.0f;
+
 	// Configure character movement
 	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f); // ...at this rotation rate
@@ -59,6 +66,7 @@ void AGeGroupProjectCharacter::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 
+	UE_LOG(LogTemp, Warning, TEXT("CorrectPlayerSelected"));
 	//Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
@@ -67,6 +75,32 @@ void AGeGroupProjectCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+}
+
+void AGeGroupProjectCharacter::TakeDamage(float damageAmmount)
+{
+	if (!IsDead)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Took %f points of damage"), damageAmmount)
+		PlayerHealth -= damageAmmount;
+		if (PlayerHealth <= 0.00f)
+		{
+			OnDeath();
+		}
+	}
+}
+
+void AGeGroupProjectCharacter::OnDeath()
+{
+	IsDead = true;
+	// Set death animation form character blueprint. I don´t have an animaton :(
+	GetWorld()->GetTimerManager().SetTimer(RespawnTimer, this, &AGeGroupProjectCharacter::Respawn, respawnTime, false);
+}
+void AGeGroupProjectCharacter::Respawn()
+{
+	SetActorLocation(RespawnLocation);
+	PlayerHealth = 1.0f;
+	IsDead = false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -98,21 +132,24 @@ void AGeGroupProjectCharacter::Move(const FInputActionValue& Value)
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
-	if (Controller != nullptr)
+	if (!IsDead) 
 	{
-		// find out which way is forward
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
+		if (Controller != nullptr)
+		{
+			// find out which way is forward
+			const FRotator Rotation = Controller->GetControlRotation();
+			const FRotator YawRotation(0, Rotation.Yaw, 0);
 
-		// get forward vector
-		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	
-		// get right vector 
-		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+			// get forward vector
+			const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 
-		// add movement 
-		AddMovementInput(ForwardDirection, MovementVector.Y);
-		AddMovementInput(RightDirection, MovementVector.X);
+			// get right vector 
+			const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+
+			// add movement 
+			AddMovementInput(ForwardDirection, MovementVector.Y);
+			AddMovementInput(RightDirection, MovementVector.X);
+		}
 	}
 }
 

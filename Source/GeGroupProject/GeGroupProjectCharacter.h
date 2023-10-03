@@ -45,8 +45,20 @@ class AGeGroupProjectCharacter : public ACharacter
 	UInputAction* LookAction;
 
 public:
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Health")
+	float PlayerHealth;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
+	bool IsDead;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
+	float respawnTime;
+
+	FTimerHandle RespawnTimer;
+	FVector RespawnLocation;
+
+public:
 	AGeGroupProjectCharacter();
-	
 
 protected:
 
@@ -55,7 +67,15 @@ protected:
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
-			
+
+	// Mario like code additions
+	void OnDeath();
+
+	UFUNCTION(BlueprintCallable)
+	void Respawn();
+
+	UFUNCTION(BlueprintCallable)
+	void TakeDamage(float damageAmmount);
 
 protected:
 	// APawn interface
@@ -63,6 +83,8 @@ protected:
 	
 	// To add mapping context
 	virtual void BeginPlay();
+
+	
 
 public:
 	/** Returns CameraBoom subobject **/
